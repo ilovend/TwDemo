@@ -5,7 +5,7 @@
 indicator("事件合约预测引擎", overlay = true, max_labels_count = 500)
 
 
-grp_bt = "期权资金管理"
+grp_bt = "合约资金管理"
 initCap = input.float(1000.0, title = "初始资金 (U)", group = grp_bt)
 payout = input.float(0.80, title = "单笔获胜固定赔率", minval = 0.1, step = 0.05, group = grp_bt)
 amtStrong = input.float(10.0, title = "强共振下注金额 (U)", group = grp_bt)
