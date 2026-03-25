@@ -2,45 +2,45 @@
 // © ilovend
 
 //@version=5
-indicator("事件合约预测引擎", overlay = true, max_labels_count = 500)
+indicator("事件合约预测引擎", overlay = true, max_labels_count=500)
 
 
-grp_bt = "合约资金管理"
-initCap = input.float(1000.0, title = "初始资金 (U)", group = grp_bt)
-payout = input.float(0.80, title = "单笔获胜固定赔率", minval = 0.1, step = 0.05, group = grp_bt)
+grp_bt = "期权资金管理"
+initCap   = input.float(1000.0, title="初始资金 (U)", group = grp_bt)
+payout    = input.float(0.80, title = "单笔获胜固定赔率", minval = 0.1, step = 0.05, group = grp_bt)
 amtStrong = input.float(10.0, title = "强共振下注金额 (U)", group = grp_bt)
 amtNormal = input.float(3.0, title = "普通共振下注金额 (U)", group = grp_bt)
-holdBars = input.int(5, title = "固定合约到期时间(K线根数)", minval = 1, group = grp_bt)
-slipTicks = input.int(0, title = "实盘滑点容错(最小跳动点)", tooltip = "模拟进场不利滑点，建议先设0看纯策略胜率", minval = 0, group = grp_bt)
+holdBars  = input.int(5, title = "固定合约到期时间(K线根数)", tooltip="含入场K线在内的总根数，如5=入场后第5根K线收盘结算", minval = 2, group = grp_bt)
+slipTicks = input.int(0, title = "实盘滑点容错(最小跳动点)", tooltip="模拟进场不利滑点，建议先设0看纯策略胜率", minval = 0, group = grp_bt)
 
 
 grp_filter = "高级胜率过滤"
-useTimeFilter = input.bool(false, title = "开启交易时段过滤", group = grp_filter)
-tradeSession = input.session("0930-1600", title = "允许交易时段", group = grp_filter)
+useTimeFilter  = input.bool(false, title = "开启交易时段过滤", group=grp_filter)
+tradeSession   = input.session("0930-1600", title="允许交易时段", group=grp_filter)
 
-useATRFilter = input.bool(false, title = "开启ATR波动率过滤", group = grp_filter)
-atrPeriod = input.int(14, title = "ATR周期", group = grp_filter)
-atrMin = input.float(0.5, title = "最小ATR阈值(点)", step = 0.1, group = grp_filter)
+useATRFilter   = input.bool(false, title = "开启ATR波动率过滤", group=grp_filter)
+atrPeriod      = input.int(14, title = "ATR周期", group=grp_filter)
+atrMin         = input.float(0.5, title = "最小ATR阈值(点)", step=0.1, group=grp_filter)
 
-emaTrendPeriod = input.int(200, title = "大趋势EMA过滤周期", group = grp_filter)
-useEmaFilter = input.bool(false, title = "开启大趋势EMA防逆势过滤", group = grp_filter)
+emaTrendPeriod = input.int(200, title = "大趋势EMA过滤周期", group=grp_filter)
+useEmaFilter   = input.bool(false, title = "开启大趋势EMA防逆势过滤", group=grp_filter)
 
 grp_opt = "增强指标过滤"
-useADX = input.bool(false, title = "启用ADX趋势强度过滤", tooltip = "过滤无波动死水震荡", group = grp_opt)
-adxPeriod = input.int(14, title = "ADX周期", group = grp_opt)
-adxThreshold = input.int(20, title = "ADX基准阈值(建议20-25)", group = grp_opt)
-useDivergence = input.bool(false, title = "启用RSI背离过滤", tooltip = "顶背离时不进多，底背离时不进空", group = grp_opt)
-cooldownBars = input.int(3, title = "信号冷却期(K线数)", tooltip = "上一个信号触发后N根K线内不再发出同方向信号，防止震荡连续误判", minval = 0, group = grp_opt)
+useADX        = input.bool(false, title = "启用ADX趋势强度过滤", tooltip="过滤无波动死水震荡", group=grp_opt)
+adxPeriod     = input.int(14, title = "ADX周期", group=grp_opt)
+adxThreshold  = input.int(20, title = "ADX基准阈值(建议20-25)", group=grp_opt)
+useDivergence = input.bool(false, title = "启用RSI背离过滤", tooltip="顶背离时不进多，底背离时不进空", group=grp_opt)
+cooldownBars  = input.int(3, title = "信号冷却期(K线数)", tooltip="上一个信号触发后N根K线内不再发出同方向信号，防止震荡连续误判", minval = 0, group=grp_opt)
 
 grp_ind = "技术指标参数"
 rsiPeriod = input.int(14, title = "RSI 周期", group = grp_ind)
-macdFast = input.int(12, title = "MACD 快线周期", group = grp_ind)
-macdSlow = input.int(26, title = "MACD 慢线周期", group = grp_ind)
-macdSig = input.int(9, title = "MACD 信号周期", group = grp_ind)
-bbPeriod = input.int(20, title = "布林带周期", group = grp_ind)
-bbDev = input.float(2.0, title = "布林带标准差", group = grp_ind)
-volMult = input.float(1.5, title = "均量放大倍数", step = 0.1, group = grp_ind)
-syncBars = input.int(3, title = "信号共振容错区间(K线)", tooltip = "调大获得更多信号，调小更精准", minval = 0, group = grp_ind)
+macdFast  = input.int(12, title = "MACD 快线周期", group = grp_ind)
+macdSlow  = input.int(26, title = "MACD 慢线周期", group = grp_ind)
+macdSig   = input.int(9, title = "MACD 信号周期", group = grp_ind)
+bbPeriod  = input.int(20, title = "布林带周期", group = grp_ind)
+bbDev     = input.float(2.0, title = "布林带标准差", group = grp_ind)
+volMult   = input.float(1.5, title = "均量放大倍数", step = 0.1, group = grp_ind)
+syncBars  = input.int(3, title = "信号共振容错区间(K线)", tooltip="调大获得更多信号，调小更精准", minval = 0, group = grp_ind)
 
 // 1. RSI
 rsiVal = ta.rsi(close, rsiPeriod)
@@ -67,20 +67,18 @@ bbShort = ta.barssince(bbShortEvent) <= syncBars
 smaVol5 = ta.sma(volume, 5)
 volConfirm = volume >= (smaVol5[1] * volMult)
 
-// 5. MACD柱状图动能方向 (新增：确保动能正在加速)
-macdMomentumLong = macdHist > macdHist[1]   // 柱状图正在上升，多头动能加强
-macdMomentumShort = macdHist < macdHist[1]  // 柱状图正在下降，空头动能加强
+// 5. MACD柱状图动能方向
+macdMomentumLong = macdHist > macdHist[1]
+macdMomentumShort = macdHist < macdHist[1]
 
-// 6. K线方向确认 + 实体副度过滤 (做多必须收阳且不是十字星)
+// 6. K线方向确认 + 实体幅度过滤
 candleBody = math.abs(close - open)
 candleRange = high - low
-isMeaningfulCandle = candleRange > 0 and(candleBody / candleRange) > 0.3  // 实体占比超过30%，排除十字星/融合线
+isMeaningfulCandle = candleRange > 0 and (candleBody / candleRange) > 0.3
 candleLong = close > open and isMeaningfulCandle
 candleShort = close < open and isMeaningfulCandle
 
 // === 信号打分与环境过滤 ===
-// =====================
-// 加入动能方向确认，5维度评分（得分越高信号越强）
 longScore = (rsiLong ? 1 : 0) + (macdLong ? 1 : 0) + (bbLong ? 1 : 0) + (volConfirm ? 1 : 0) + (macdMomentumLong ? 1 : 0)
 shortScore = (rsiShort ? 1 : 0) + (macdShort ? 1 : 0) + (bbShort ? 1 : 0) + (volConfirm ? 1 : 0) + (macdMomentumShort ? 1 : 0)
 
@@ -94,162 +92,174 @@ isVolatile = (atrVal >= atrMin) or not useATRFilter
 inSession = time(timeframe.period, tradeSession)
 isTimeValid = not na(inSession) or not useTimeFilter
 
-// --- ADX趋势强度 (简化版，只要求ADX>阈值即可) ---
+// --- ADX趋势强度 ---
 [diPlus, diMinus, adx] = ta.dmi(adxPeriod, adxPeriod)
 adxOk = adx >= adxThreshold
 bullishTrend = diPlus > diMinus and adxOk
 bearishTrend = diMinus > diPlus and adxOk
 
-// --- RSI背离预防 (放宽窗口至10根K线，降低误判) ---
+// --- RSI背离预防 ---
 priceHigh10 = ta.highest(high, 10)
 rsiHigh10 = ta.highest(rsiVal, 10)
-bearishDiv = (high >= priceHigh10[1]) and(rsiVal < rsiHigh10[1] * 0.95)
+bearishDiv = (high >= priceHigh10[1]) and (rsiVal < rsiHigh10[1] * 0.95)
 
 priceLow10 = ta.lowest(low, 10)
 rsiLow10 = ta.lowest(rsiVal, 10)
-bullishDiv = (low <= priceLow10[1]) and(rsiVal > rsiLow10[1] * 1.05)
+bullishDiv = (low <= priceLow10[1]) and (rsiVal > rsiLow10[1] * 1.05)
 
 // 合并趋势判定
-finalTrendUp = trendUp and(not useADX or bullishTrend)
-finalTrendDown = trendDown and(not useADX or bearishTrend)
+finalTrendUp = trendUp and (not useADX or bullishTrend)
+finalTrendDown = trendDown and (not useADX or bearishTrend)
 
 // === 核心逻辑整合 ===
-// 基础要求：至少3维度共振 + K线方向确认 + 环境过滤
-isLongCond = longScore >= 3 and candleLong and finalTrendUp and isVolatile and isTimeValid and(not useDivergence or not bearishDiv)
-isShortCond = shortScore >= 3 and candleShort and finalTrendDown and isVolatile and isTimeValid and(not useDivergence or not bullishDiv)
+isLongCond = longScore >= 3 and candleLong and finalTrendUp and isVolatile and isTimeValid and (not useDivergence or not bearishDiv)
+isShortCond = shortScore >= 3 and candleShort and finalTrendDown and isVolatile and isTimeValid and (not useDivergence or not bullishDiv)
 
 // 防止震荡中连续误判：增加冷却期
 var int lastLongBar = -999
 var int lastShortBar = -999
 
-rawLongSignal = isLongCond and not isLongCond[1]
+rawLongSignal  = isLongCond and not isLongCond[1]
 rawShortSignal = isShortCond and not isShortCond[1]
 
-// 只有距离上次同方向信号超过冷却期才放行
-isLongSignal = rawLongSignal and(bar_index - lastLongBar > cooldownBars)
-isShortSignal = rawShortSignal and(bar_index - lastShortBar > cooldownBars)
+isLongSignal  = rawLongSignal and (bar_index - lastLongBar > cooldownBars)
+isShortSignal = rawShortSignal and (bar_index - lastShortBar > cooldownBars)
 
-// 记录上次信号bar
 if isLongSignal
-    lastLongBar:= bar_index
+    lastLongBar := bar_index
 if isShortSignal
-    lastShortBar:= bar_index
+    lastShortBar := bar_index
 
-// 强信号：5维度全中 = 重注 / 普通信号：3-4维度 = 轻注
+// 强信号判定
 strongLong = isLongSignal and longScore >= 4
 normalLong = isLongSignal and longScore == 3
 strongShort = isShortSignal and shortScore >= 4
 normalShort = isShortSignal and shortScore == 3
 
 // 可视化EMA
-plot(ema200, color = (useEmaFilter ? (close > ema200 ? color.rgb(0, 255, 0, 50) : color.rgb(255, 0, 0, 50)) : na), title = "EMA大趋势", linewidth = 2)
+plot(ema200, color=(useEmaFilter ? (close > ema200 ? color.rgb(0, 255, 0, 50) : color.rgb(255, 0, 0, 50)) : na), title="EMA大趋势", linewidth=2)
 
 // 标签UI
-plotshape(strongLong, title = "极强看涨", style = shape.labelup, location = location.belowbar, color = color.rgb(0, 255, 0), size = size.normal, text = "强看涨\n10U", textcolor = color.black)
-plotshape(normalLong, title = "普通看涨", style = shape.labelup, location = location.belowbar, color = color.lime, size = size.small, text = "看涨\n3U", textcolor = color.black)
-plotshape(strongShort, title = "极强看跌", style = shape.labeldown, location = location.abovebar, color = color.rgb(255, 0, 0), size = size.normal, text = "强看跌\n10U", textcolor = color.white)
-plotshape(normalShort, title = "普通看跌", style = shape.labeldown, location = location.abovebar, color = color.orange, size = size.small, text = "看跌\n3U", textcolor = color.white)
+plotshape(strongLong, title="极强看涨", style=shape.labelup, location=location.belowbar, color=color.rgb(0,255,0), size=size.normal, text="强看涨\n10U", textcolor=color.black)
+plotshape(normalLong, title="普通看涨", style=shape.labelup, location=location.belowbar, color=color.lime, size=size.small, text="看涨\n3U", textcolor=color.black)
+plotshape(strongShort, title="极强看跌", style=shape.labeldown, location=location.abovebar, color=color.rgb(255,0,0), size=size.normal, text="强看跌\n10U", textcolor=color.white)
+plotshape(normalShort, title="普通看跌", style=shape.labeldown, location=location.abovebar, color=color.orange, size=size.small, text="看跌\n3U", textcolor=color.white)
 
 
 // =====================
 // === 并发二元期权回测引擎 ===
 // =====================
 var int totalTrades = 0
-var int winTrades = 0
-var int lossTrades = 0
-var int tieTrades = 0
-var float equity = initCap
+var int winTrades   = 0
+var int lossTrades  = 0
+var int tieTrades   = 0
+var float equity    = initCap
 
 // 运行时订单追踪队列
 var float[] tradeEntryPrice = array.new_float(0)
-var int[]   tradeEntryBar = array.new_int(0)
-var float[] tradeAmount = array.new_float(0)
-var int[]   tradeDir = array.new_int(0)
+var int[]   tradeEntryBar   = array.new_int(0)
+var float[] tradeAmount     = array.new_float(0)
+var int[]   tradeDir        = array.new_int(0)
 
-// 1. 若有信号则压入队列
+// 1. 若有信号则压入队列 (新增：先检查账户余额是否足够)
 if isLongSignal
-    array.push(tradeEntryPrice, close)
-array.push(tradeEntryBar, bar_index)
-array.push(tradeAmount, strongLong ? amtStrong : amtNormal)
-array.push(tradeDir, 1)
+    float requiredAmt = strongLong ? amtStrong : amtNormal
+    if equity >= requiredAmt
+        array.push(tradeEntryPrice, close)
+        array.push(tradeEntryBar, bar_index)
+        array.push(tradeAmount, requiredAmt)
+        array.push(tradeDir, 1)
 
 if isShortSignal
-    array.push(tradeEntryPrice, close)
-array.push(tradeEntryBar, bar_index)
-array.push(tradeAmount, strongShort ? amtStrong : amtNormal)
-array.push(tradeDir, -1)
+    float requiredAmt = strongShort ? amtStrong : amtNormal
+    if equity >= requiredAmt
+        array.push(tradeEntryPrice, close)
+        array.push(tradeEntryBar, bar_index)
+        array.push(tradeAmount, requiredAmt)
+        array.push(tradeDir, -1)
 
 // 2. 检查到期的合约结算
+// [核心修复] holdBars包含入场K线：入场bar算第1根，所以第holdBars根是 entryB + holdBars - 1
 if array.size(tradeEntryBar) > 0
     int i = array.size(tradeEntryBar) - 1
-while i >= 0
+    while i >= 0
         int entryB = array.get(tradeEntryBar, i)
 
-if bar_index - entryB >= holdBars
-            float ep = array.get(tradeEntryPrice, i)
+        if bar_index - entryB >= holdBars - 1
+            float ep  = array.get(tradeEntryPrice, i)
             float amt = array.get(tradeAmount, i)
             int   dir = array.get(tradeDir, i)
             
             bool isWin = false
             bool isTie = false
-
+            
             // 滑点容错
             float buffer = syminfo.mintick * slipTicks
-
-if dir == 1 
+            
+            if dir == 1 
                 if close > (ep + buffer)
-                    isWin:= true
-    else if math.abs(close - ep) <= buffer
-                    isTie:= true   // 在滑点范围内算平局
-    else
-        if close < (ep - buffer)
-                    isWin:= true
-        else if math.abs(close - ep) <= buffer
-                    isTie:= true   // 在滑点范围内算平局
+                    isWin := true
+                else if math.abs(close - ep) <= buffer
+                    isTie := true
+            else 
+                if close < (ep - buffer)
+                    isWin := true
+                else if math.abs(close - ep) <= buffer
+                    isTie := true
 
-totalTrades += 1
-if isWin
+            totalTrades += 1
+            if isWin
                 winTrades += 1
-equity += (amt * payout) 
+                equity += (amt * payout) 
             else if isTie
                 tieTrades += 1
-else
-    lossTrades += 1
-equity -= amt            
+            else
+                lossTrades += 1
+                equity -= amt            
                 
-            string resultText = isWin ? "赢" : (isTie ? "平" : "亏")
+            string resultText  = isWin ? "赢" : (isTie ? "平" : "亏")
             color  resultColor = isWin ? color.rgb(0, 255, 0, 70) : (isTie ? color.gray : color.rgb(255, 0, 0, 70))
-label.new(bar_index, dir == 1 ? high : low, resultText, style = dir == 1 ? label.style_label_down : label.style_label_up, color = resultColor, textcolor = color.white, size = size.tiny)
-
-array.remove(tradeEntryPrice, i)
-array.remove(tradeEntryBar, i)
-array.remove(tradeAmount, i)
-array.remove(tradeDir, i)
-i -= 1
+            label.new(bar_index, dir == 1 ? high : low, resultText, style= dir==1 ? label.style_label_down : label.style_label_up, color=resultColor, textcolor=color.white, size=size.tiny)
+            
+            array.remove(tradeEntryPrice, i)
+            array.remove(tradeEntryBar, i)
+            array.remove(tradeAmount, i)
+            array.remove(tradeDir, i)
+        i -= 1
 
 // =====================
 // === 数据看板 ===
 // =====================
-var table perfTable = table.new(position.top_right, 2, 6, border_width = 1, border_color = color.gray)
+var table perfTable = table.new(position.top_right, 2, 7, border_width=1, border_color=color.gray)
+
+// 追踪最大回撤
+var float peakEquity   = initCap
+var float maxDrawdown  = 0.0
+peakEquity  := math.max(peakEquity, equity)
+float curDrawdown = peakEquity > 0 ? ((peakEquity - equity) / peakEquity * 100) : 0.0
+maxDrawdown := math.max(maxDrawdown, curDrawdown)
 
 if barstate.islast
     float winRate = totalTrades > 0 ? (winTrades * 1.0 / totalTrades * 100) : 0.0
     float netProfit = equity - initCap
-
-table.cell(perfTable, 0, 0, "事件合约预测引擎", bgcolor = color.black, text_color = color.white, width = 14)
-table.cell(perfTable, 1, 0, "核心数据", bgcolor = color.black, text_color = color.white, width = 10)
-
-table.cell(perfTable, 0, 1, "总交易数", bgcolor = color.rgb(40, 40, 40), text_color = color.white)
-table.cell(perfTable, 1, 1, str.tostring(totalTrades), bgcolor = color.white, text_color = color.black)
-
-table.cell(perfTable, 0, 2, "胜/负/平", bgcolor = color.rgb(40, 40, 40), text_color = color.white)
-table.cell(perfTable, 1, 2, str.tostring(winTrades) + "/" + str.tostring(lossTrades) + "/" + str.tostring(tieTrades), bgcolor = color.white, text_color = color.black)
-
-table.cell(perfTable, 0, 3, "纯方向胜率", bgcolor = color.rgb(40, 40, 40), text_color = color.white)
-table.cell(perfTable, 1, 3, str.tostring(winRate, "#.##") + "%", bgcolor = (winRate >= 55 ? color.new(color.green, 30) : (winRate >= 50 ? color.new(color.yellow, 30) : color.new(color.red, 30))), text_color = color.white)
-
-table.cell(perfTable, 0, 4, "账户净值", bgcolor = color.rgb(40, 40, 40), text_color = color.white)
-table.cell(perfTable, 1, 4, str.tostring(equity, "#.##") + " U", bgcolor = color.white, text_color = color.black)
-
-table.cell(perfTable, 0, 5, "滚存利润", bgcolor = color.rgb(40, 40, 40), text_color = color.white)
-table.cell(perfTable, 1, 5, str.tostring(netProfit, "#.##") + " U", bgcolor = (netProfit >= 0 ? color.new(color.green, 30) : color.new(color.red, 30)), text_color = color.white)
+    
+    table.cell(perfTable, 0, 0, "事件合约预测引擎", bgcolor=color.black, text_color=color.white, width=14)
+    table.cell(perfTable, 1, 0, "核心数据", bgcolor=color.black, text_color=color.white, width=10)
+    
+    table.cell(perfTable, 0, 1, "总交易数", bgcolor=color.rgb(40,40,40), text_color=color.white)
+    table.cell(perfTable, 1, 1, str.tostring(totalTrades), bgcolor=color.white, text_color=color.black)
+    
+    table.cell(perfTable, 0, 2, "胜/负/平", bgcolor=color.rgb(40,40,40), text_color=color.white)
+    table.cell(perfTable, 1, 2, str.tostring(winTrades) + "/" + str.tostring(lossTrades) + "/" + str.tostring(tieTrades), bgcolor=color.white, text_color=color.black)
+    
+    table.cell(perfTable, 0, 3, "纯方向胜率", bgcolor=color.rgb(40,40,40), text_color=color.white)
+    table.cell(perfTable, 1, 3, str.tostring(winRate, "#.##") + "%", bgcolor=(winRate >= 55 ? color.new(color.green,30) : (winRate >= 50 ? color.new(color.yellow,30) : color.new(color.red,30))), text_color=color.white)
+    
+    table.cell(perfTable, 0, 4, "账户净值", bgcolor=color.rgb(40,40,40), text_color=color.white)
+    table.cell(perfTable, 1, 4, str.tostring(equity, "#.##") + " U", bgcolor=color.white, text_color=color.black)
+    
+    table.cell(perfTable, 0, 5, "滚存利润", bgcolor=color.rgb(40,40,40), text_color=color.white)
+    table.cell(perfTable, 1, 5, str.tostring(netProfit, "#.##") + " U", bgcolor=(netProfit >= 0 ? color.new(color.green,30) : color.new(color.red,30)), text_color=color.white)
+    
+    table.cell(perfTable, 0, 6, "最大回撤", bgcolor=color.rgb(40,40,40), text_color=color.white)
+    table.cell(perfTable, 1, 6, str.tostring(maxDrawdown, "#.##") + "%", bgcolor=(maxDrawdown <= 10 ? color.new(color.green,30) : (maxDrawdown <= 20 ? color.new(color.yellow,30) : color.new(color.red,30))), text_color=color.white)
