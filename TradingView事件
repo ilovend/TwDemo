@@ -18,9 +18,9 @@ grp_filter = "高级胜率过滤"
 useTimeFilter  = input.bool(false, title = "开启交易时段过滤", group=grp_filter)
 tradeSession   = input.session("0930-1600", title="允许交易时段", group=grp_filter)
 
-useATRFilter   = input.bool(false, title = "开启ATR波动率过滤", group=grp_filter)
+useATRFilter   = input.bool(true, title = "开启ATR动态波动率过滤", tooltip="自动过滤低波动的横盘死水行情，自适应任何币种", group=grp_filter)
 atrPeriod      = input.int(14, title = "ATR周期", group=grp_filter)
-atrMin         = input.float(0.5, title = "最小ATR阈值(点)", step=0.1, group=grp_filter)
+atrRatio       = input.float(0.8, title = "ATR活跃度比例(建肮0.6-1.0)", tooltip="当前ATR必须达到50周期均值的X倍才算活跃，调低=更多信号，调高=更严格", step=0.1, minval=0.1, group=grp_filter)
 
 emaTrendPeriod = input.int(200, title = "大趋势EMA过滤周期", group=grp_filter)
 useEmaFilter   = input.bool(false, title = "开启大趋势EMA防逆势过滤", group=grp_filter)
@@ -87,7 +87,9 @@ trendUp = (close > ema200) or not useEmaFilter
 trendDown = (close < ema200) or not useEmaFilter
 
 atrVal = ta.atr(atrPeriod)
-isVolatile = (atrVal >= atrMin) or not useATRFilter
+atrAvg = ta.sma(atrVal, 50)
+// 动态自适应过滤：当前ATR必须达到近期均值的X倍，否则认为是低波动横盘
+isVolatile = (atrVal >= atrAvg * atrRatio) or not useATRFilter
 
 inSession = time(timeframe.period, tradeSession)
 isTimeValid = not na(inSession) or not useTimeFilter
